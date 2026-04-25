@@ -1,0 +1,54 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Local agent/session marker
+.codex
+
+# This repository is a Python data pipeline; ignore empty npm placeholders.
+package.json
+package-lock.json
+
+# Local logs and run artifacts
+*.log
+logs/**
+!logs/.gitkeep
+
+# Raw evidence and generated pipeline outputs can be very large.
+# Keep only the input sample and top-level directory placeholders in Git.
+data/raw/**
+!data/raw/.gitkeep
+
+data/staging/**
+!data/staging/.gitkeep
+
+data/curated/**
+!data/curated/.gitkeep
+
+# Human review reports are generated artifacts unless explicitly promoted to docs.
+reports/**
+!reports/.gitkeep
+
+# Large local cache/intermediate formats
+*.data
+*.download
+*.tmp
+*.temp
+*.bak

@@ -1,0 +1,102 @@
+project:
+  name: asn_mismatch_pipeline
+  version: "0.1.0"
+  schema_version: "v1"
+  parser_version: "v1"
+
+run:
+  run_id: "manual_2026_04_23_01"
+  dry_run: false
+  resume: true
+  raw_append_only: true
+
+input:
+  asn_months_csv: "data/input/asn_months.csv"
+
+paths:
+  raw_root: "data/raw"
+  staging_root: "data/staging"
+  curated_root: "data/curated"
+  reports_root: "reports"
+  logs_root: "data/raw/_logs"
+
+windows:
+  registry_snapshot_mode: "latest_available"
+  links_aggregation: "monthly"
+  bgp_days: 90
+  path_days: 30
+
+sources:
+  registry:
+    delegated:
+      enabled: true
+      include_rirs: ["afrinic", "apnic", "arin", "lacnic", "ripencc"]
+    rdap:
+      enabled: true
+      timeout_sec: 30
+      max_retries: 3
+    whois:
+      enabled: true
+      timeout_sec: 30
+      max_retries: 2
+
+  links:
+    ripestat:
+      enabled: true
+      timeout_sec: 30
+      max_retries: 3
+    asrank:
+      enabled: true
+      timeout_sec: 30
+      max_retries: 3
+
+  prefixes:
+    local_bview:
+      enabled: true
+      collector: "rrc25"
+      root: "/home/bgpdata/data/ripe/rrc25"
+      bgpdump_bin: "/usr/bin/bgpdump"
+      snapshot_mode: "month_end_latest"
+    as_entity:
+      enabled: true
+      source_path: "/home/experiment/info/as_entity.csv"
+      country_field: "as_country"
+      default_country: "IR"
+
+thresholds:
+  topology:
+    high_neighbor_churn_rate: 0.50
+    high_provider_switch_count: 2
+    low_neighbor_count_threshold: 2
+
+stage1:
+  suspect_level_rules:
+    high:
+      require_admin_conflict: true
+      require_topology_anomaly: true
+    medium:
+      require_any_two:
+        - admin_conflict_flag
+        - topology_anomaly_flag
+        - geo_conflict_flag
+    low:
+      fallback: true
+
+classification:
+  final_labels:
+    - normal_border_as
+    - explainable_crossborder
+    - suspected_offshore_like
+    - insufficient_evidence
+
+validation:
+  require_run_id: true
+  require_schema_version: true
+  require_parser_version: true
+  require_raw_evidence_path: true
+  require_raw_evidence_sha256: true
+  strict_country_code: true
+
+reporting:
+  case_card_formats: ["md", "html"]
+  include_raw_evidence_links: true
