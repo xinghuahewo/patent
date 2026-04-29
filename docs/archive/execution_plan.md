@@ -1,5 +1,9 @@
 # 执行计划（v1）
 
+状态：archived
+
+归档原因：v1 计划已完成并被 `docs/status.md`、`docs/runbook.md`、`docs/roadmap.md` 拆分承接。本文只作为早期执行计划背景参考。
+
 ## 1. 目标
 
 将“ASN 注册地与运营地不一致识别”的方法落地为一套文件优先的离线工程流水线。

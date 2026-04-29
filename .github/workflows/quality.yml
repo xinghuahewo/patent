@@ -1,0 +1,33 @@
+name: quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test runner
+        run: python3 -m pip install pytest
+
+      - name: Check repository rules
+        run: python3 scripts/check_repo_rules.py
+
+      - name: Require worklog update on pull requests
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/check_repo_rules.py --require-worklog-change origin/${{ github.base_ref }}
+
+      - name: Run tests
+        run: pytest -q

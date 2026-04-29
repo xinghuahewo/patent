@@ -82,6 +82,28 @@ REQUIRED = {
         "raw_evidence_sha256",
         "fetch_time",
     ],
+    "prefix_geo": [
+        "record_id",
+        "run_id",
+        "schema_version",
+        "parser_version",
+        "asn",
+        "analysis_month",
+        "baseline_country",
+        "prefix_count",
+        "mapped_prefix_count",
+        "unmapped_prefix_count",
+        "dominant_prefix_country",
+        "dominant_prefix_country_ratio",
+        "foreign_prefix_count",
+        "foreign_prefix_coverage_ratio",
+        "geo_conflict_flag",
+        "raw_evidence_path",
+        "raw_evidence_sha256",
+        "geo_evidence_path",
+        "geo_evidence_sha256",
+        "evidence_summary",
+    ],
     "stage1": [
         "record_id",
         "run_id",
@@ -194,6 +216,7 @@ BOOL_FIELDS = {
     ],
     "links": ["link_instability_flag", "border_as_flag", "topology_anomaly_flag"],
     "prefixes": [],
+    "prefix_geo": ["geo_conflict_flag"],
     "stage1": ["admin_conflict_flag", "geo_conflict_flag", "topology_anomaly_flag", "border_as_flag", "review_required_flag"],
     "delegated_monthly": [],
     "region_segments": [],
@@ -215,6 +238,8 @@ TRAJECTORY_TYPES = {
     "data_gap",
 }
 EVENT_TYPES = {"rir_change", "country_change", "region_change", "status_change", "appeared", "disappeared", "gap_start", "gap_end"}
+DAILY_PIPELINE_STAGES = ["registry", "links", "prefixes", "prefix_geo", "stage1"]
+REGISTRY_HISTORY_STAGES = ["delegated_monthly", "region_segments", "region_trajectories", "region_change_events"]
 
 
 @dataclass
@@ -280,6 +305,9 @@ def stage_paths(config: dict[str, Any], stage: str) -> tuple[Path, Path]:
     if stage == "prefixes":
         root = Path(config["paths"]["staging_root"]) / "prefixes"
         return root / "asn_prefix_inventory_monthly.csv", root / "asn_prefix_inventory_monthly.parquet"
+    if stage == "prefix_geo":
+        root = Path(config["paths"]["staging_root"]) / "prefixes"
+        return root / "asn_prefix_geo_monthly.csv", root / "asn_prefix_geo_monthly.parquet"
     if stage == "delegated_monthly":
         root = Path(config["paths"]["staging_root"]) / "registry"
         return root / "asn_delegated_monthly.csv", root / "asn_delegated_monthly.parquet"
@@ -306,6 +334,7 @@ def validate_stage(config: dict[str, Any], stage: str, *, progress_enabled: bool
         return [f"{stage}: no rows found at {csv_path}"]
 
     seen: set[tuple[str, str, str]] = set()
+    raw_sha_cache: dict[str, str] = {}
     for idx, row in enumerate(progress_iter(rows, total=len(rows), desc=stage, enabled=progress_enabled), start=2):
         context = f"{stage}:row{idx}"
         for field in REQUIRED[stage]:
@@ -374,9 +403,42 @@ def validate_stage(config: dict[str, Any], stage: str, *, progress_enabled: bool
                     errors.append(f"{context}: total_prefix_count must equal prefix_count_v4 + prefix_count_v6")
             except Exception:
                 errors.append(f"{context}: prefix counts must be integer-like")
+        if stage == "prefix_geo":
+            _validate_prefix_geo_row(row, context, errors, raw_sha_cache)
         if stage == "stage1" and row.get("suspect_level") not in {"high", "medium", "low"}:
             errors.append(f"{context}: suspect_level must be high/medium/low")
     return errors
+
+
+def _validate_prefix_geo_row(row: dict[str, Any], context: str, errors: list[str], raw_sha_cache: dict[str, str]) -> None:
+    for field in ("baseline_country", "dominant_prefix_country"):
+        country = str(row.get(field) or "").upper()
+        if country and country != "ZZ" and not COUNTRY_RE.match(country):
+            errors.append(f"{context}: {field} must be two-letter country code or ZZ")
+    try:
+        prefix_count = as_int(row.get("prefix_count"))
+        mapped_count = as_int(row.get("mapped_prefix_count"))
+        unmapped_count = as_int(row.get("unmapped_prefix_count"))
+        foreign_count = as_int(row.get("foreign_prefix_count"))
+        if min(prefix_count, mapped_count, unmapped_count, foreign_count) < 0:
+            errors.append(f"{context}: prefix counts must be non-negative")
+        if prefix_count != mapped_count + unmapped_count:
+            errors.append(f"{context}: prefix_count must equal mapped_prefix_count + unmapped_prefix_count")
+        if foreign_count > prefix_count:
+            errors.append(f"{context}: foreign_prefix_count cannot exceed prefix_count")
+    except Exception:
+        errors.append(f"{context}: prefix_geo counts must be integer-like")
+
+    for field in ("dominant_prefix_country_ratio", "foreign_prefix_coverage_ratio"):
+        try:
+            ratio = as_float(row.get(field))
+            if not 0.0 <= ratio <= 1.0:
+                errors.append(f"{context}: {field} must be in [0.0, 1.0]")
+        except Exception:
+            errors.append(f"{context}: {field} must be float-like")
+
+    _validate_raw_sha(row.get("raw_evidence_path"), row.get("raw_evidence_sha256"), context, "raw_evidence", errors, raw_sha_cache)
+    _validate_raw_sha(row.get("geo_evidence_path"), row.get("geo_evidence_sha256"), context, "geo_evidence", errors, raw_sha_cache)
 
 
 def validate_region_change_stage(config: dict[str, Any], stage: str, *, progress_enabled: bool = False) -> list[str]:
@@ -559,14 +621,20 @@ def main(argv: list[str] | None = None) -> int:
             "registry",
             "links",
             "prefixes",
+            "prefix_geo",
             "stage1",
             "delegated_monthly",
             "region_segments",
             "region_trajectories",
             "region_change_events",
+            "registry_history",
             "all",
         ],
         default="all",
+        help=(
+            "默认 all 只校验日常 stage1 流水线。"
+            "五年 delegated 历史大表请显式使用 --stage registry_history。"
+        ),
     )
     parser.add_argument("--verbose", action="store_true", help="Enable detailed logs.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failed stage.")
@@ -581,16 +649,12 @@ def main(argv: list[str] | None = None) -> int:
         progress_enabled = False
 
     config = load_config(args.config)
-    stages = [
-        "registry",
-        "links",
-        "prefixes",
-        "stage1",
-        "delegated_monthly",
-        "region_segments",
-        "region_trajectories",
-        "region_change_events",
-    ] if args.stage == "all" else [args.stage]
+    if args.stage == "all":
+        stages = DAILY_PIPELINE_STAGES
+    elif args.stage == "registry_history":
+        stages = REGISTRY_HISTORY_STAGES
+    else:
+        stages = [args.stage]
 
     errors: list[str] = []
     summaries: list[StageSummary] = []

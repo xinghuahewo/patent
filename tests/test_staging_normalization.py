@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from collect_prefixes import parse_mrt_line
+from collect_registry_delegated_local import AsnDelegatedIndex, build_payload, parse_delegated_asn_line
 from pipeline_utils import DEFAULT_CONFIG, write_json
 from collect_registry import extract_rdap_fields, parse_delegated_records
 from stage_prefixes import normalize_record as normalize_prefixes
@@ -30,6 +31,41 @@ def test_delegated_parser_matches_asn_range() -> None:
     assert records[0].start_asn == 3320
     assert records[0].end_asn == 3323
     assert records[0].country == "DE"
+
+
+def test_local_delegated_asn_parser_and_lookup() -> None:
+    broad = parse_delegated_asn_line("ripencc|IR|asn|1000|100|20260331|allocated")
+    specific = parse_delegated_asn_line("ripencc|IR|asn|1050|1|20260331|assigned")
+    assert broad is not None
+    assert specific is not None
+
+    index = AsnDelegatedIndex([broad, specific])
+
+    assert index.lookup(1001).country == "IR"
+    assert index.lookup(1050).allocation_status == "assigned"
+    assert index.lookup(999) is None
+
+
+def test_local_delegated_payload_keeps_registered_country_unfetched(tmp_path: Path) -> None:
+    delegated_file = tmp_path / "nro.txt"
+    delegated_file.write_text("ripencc|IR|asn|1000|1|20260331|allocated\n", encoding="utf-8")
+    record = parse_delegated_asn_line("ripencc|IR|asn|1000|1|20260331|allocated")
+    assert record is not None
+
+    payload = build_payload(
+        asn=1000,
+        month="2026-03",
+        run_id="test_run",
+        config=DEFAULT_CONFIG,
+        record=record,
+        delegated_file=delegated_file,
+        delegated_sha256="test-sha",
+        source_snapshot_time="2026-03-31T00:00:00Z",
+    )
+
+    assert payload["normalized"]["allocated_country"] == "IR"
+    assert "registered_country" not in payload["normalized"]
+    assert payload["sources"]["rdap"]["status"] == "not_fetched"
 
 
 def test_rdap_response_parser_extracts_registry_fields() -> None:

@@ -1,0 +1,231 @@
+# 工作日志
+
+状态：active
+
+角色：固定接手入口。每次完成一个任务或改变下一步时，都要在这里补一条最新记录。下次打开仓库时，先读本文，再读 `docs/status.md`、`docs/runbook.md` 和相关代码。
+
+维护规则：
+
+- 每次修改源码、脚本、测试、配置、CI 或关键文档时，必须新增一条“最近一次工作记录”。
+- 记录必须写清楚：做了什么、改了哪些文件、验证结果、遗留问题、下次先看哪里。
+- 不在这里复制长日志；长日志保留在 `logs/` 或 `reports/`，本文只写路径和结论。
+- 如果只是生成大产物，不进 Git，也要记录产物路径和校验命令。
+
+## 当前接手入口
+
+当前仓库文档入口已经拆成：
+
+- `docs/worklog.md`：先看这里，确认最近一次改动和下次入口。
+- `docs/status.md`：当前状态、有效产物、下一小步。
+- `docs/runbook.md`：当前可运行命令、校验命令和维护规则。
+- `docs/roadmap.md`：stage1 之后的长期路线。
+- `docs/schema.md` 与 `docs/schemas/`：字段契约和语义边界。
+- `docs/artifacts.md`：staging / curated 核心产物登记。
+
+当前主线仍是 `registry + links + prefixes + prefix_geo -> stage1`。当前下一小步仍围绕已生成的 `prefix_geo` / `stage1` 候选做人工复核材料或解释增强，不要直接扩到 path、infra 或平台化 case report。
+
+## 最近一次工作记录
+
+### 2026-04-29：收尾前更新 gitignore 并准备提交
+
+任务背景：
+
+- 用户要求更新 `.gitignore` 并提交今天的仓库整理工作。
+
+本次完成：
+
+- 更新 `.gitignore`，将 `data/input` 改成显式白名单：只跟踪 `asn_months.csv` 和 `asn_months_registry_IR_2026-03.csv`，避免后续误提交临时或大输入文件。
+- 确认 raw、staging、curated、reports、logs、缓存和 npm 占位文件继续被忽略。
+
+涉及文件：
+
+- `.gitignore`
+- `docs/worklog.md`
+
+验证结果：
+
+```bash
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `check_repo_rules.py`：passed
+- `pytest -q`：31 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- 无。
+
+下次打开先看：
+
+1. `docs/worklog.md` 最新记录。
+2. `docs/status.md` 的“当前缺口”和“下一步”。
+
+### 2026-04-29：精简 AGENTS 代理规则
+
+任务背景：
+
+- 用户指出 `AGENTS.md` 内容偏多，和 `docs/runbook.md`、`docs/status.md`、`docs/artifacts.md` 有重复。
+
+本次完成：
+
+- 将 `AGENTS.md` 精简为代理硬规则和文档索引。
+- 删除 v1 旧计划、长字段说明和重复的完成定义细节，改由 `docs/runbook.md`、`docs/schema.md`、`docs/artifacts.md` 承接。
+- 保留关键约束：先读 `docs/worklog.md`，保持 `(asn, month)`，遵守 raw/staging/curated 分层，完成前运行规则检查、测试和主线校验。
+
+涉及文件：
+
+- `AGENTS.md`
+- `docs/worklog.md`
+
+验证结果：
+
+```bash
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `check_repo_rules.py`：passed
+- `pytest -q`：31 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- 无。
+
+下次打开先看：
+
+1. `docs/worklog.md` 最新记录。
+2. `docs/status.md` 的“当前缺口”和“下一步”。
+
+### 2026-04-29：同步 AGENTS 接手规则
+
+任务背景：
+
+- 用户询问新增 worklog / CI 规则后是否需要更新 `AGENTS.md`。
+
+本次完成：
+
+- 更新 `AGENTS.md`，要求新任务先读 `docs/worklog.md`，任务完成前运行 `python3 scripts/check_repo_rules.py`，并在修改源码、脚本、测试、配置、CI 或关键文档时同步更新 worklog。
+- 将测试与校验命令统一为 `python3`。
+
+涉及文件：
+
+- `AGENTS.md`
+- `docs/worklog.md`
+
+验证结果：
+
+```bash
+python3 scripts/check_repo_rules.py
+python3 -m py_compile scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `check_repo_rules.py`：passed
+- `py_compile`：passed
+- `pytest -q`：31 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- 无。
+
+下次打开先看：
+
+1. `docs/worklog.md` 最新记录。
+2. `docs/status.md` 的“当前缺口”和“下一步”。
+
+### 2026-04-29：补齐仓库规则检查与 CI
+
+任务背景：
+
+- 用户指出新增文件缺少强制规则，选择用 Git / CI 卡住。
+
+本次完成：
+
+- 新增 `scripts/check_repo_rules.py`，检查文档入口、archive 状态、schema 登记、核心产物登记和 Git 大产物边界。
+- 新增 `.github/workflows/quality.yml`，push / PR 时运行仓库规则检查和 `pytest -q`。
+- 更新 `README.md`、`docs/runbook.md`、`docs/status.md`，加入规则检查命令。
+- 补齐 `docs/artifacts.md` 中 Parquet 与 registry history curated 产物登记。
+- 将文档结构调整为 `status.md`、`runbook.md`、`roadmap.md`、`schema.md`、`schemas/`、`artifacts.md`、`archive/`。
+
+验证结果：
+
+```bash
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `check_repo_rules.py`：passed
+- `pytest -q`：31 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- CI 不跑 `validate_outputs.py --stage all`，因为 GitHub runner 没有本机 `/home/bgpdata` bview 和本机生成的 staging / curated 产物。
+- `docs/worklog.md` 本次新增后，后续每次改动都必须更新；PR 场景下规则检查可强制要求 worklog 变化。
+
+下次打开先看：
+
+1. `docs/worklog.md` 的最新一条记录。
+2. `docs/status.md` 的“下一步”。
+3. 如果要做代码改动，先跑 `python3 scripts/check_repo_rules.py` 确认规则基线干净。
+
+## 下次打开先做什么
+
+默认顺序：
+
+1. 读 `docs/worklog.md` 最新记录。
+2. 读 `docs/status.md` 的“当前缺口”和“下一步”。
+3. 若任务涉及执行命令，读 `docs/runbook.md`。
+4. 若任务涉及新增源域或字段，读 `docs/schema.md` 与 `docs/schemas/`。
+5. 若任务涉及 stage1 后续方向，读 `docs/roadmap.md`。
+6. 开始改动前先跑：
+
+```bash
+python3 scripts/check_repo_rules.py
+```
+
+## 记录模板
+
+### YYYY-MM-DD：一句话任务名
+
+任务背景：
+
+- 
+
+本次完成：
+
+- 
+
+涉及文件：
+
+- 
+
+验证结果：
+
+```bash
+
+```
+
+遗留问题：
+
+- 
+
+下次打开先看：
+
+1. 

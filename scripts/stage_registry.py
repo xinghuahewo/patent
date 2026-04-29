@@ -24,6 +24,7 @@ from pipeline_utils import (
     schema_version,
     sha256_file,
     utc_now,
+    write_json,
     write_table,
 )
 
@@ -144,6 +145,57 @@ def _source_snapshot_time(payload: dict[str, Any], *sources: dict[str, Any]) -> 
     return max(values) if values else None
 
 
+def artifact_entry(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    return {
+        "path": relative_to_root(path),
+        "sha256": sha256_file(path),
+        "bytes": path.stat().st_size,
+    }
+
+
+def write_artifact_manifest(
+    *,
+    manifest_path: Path,
+    run_id: str,
+    config: dict[str, Any],
+    input_path: Path,
+    raw_dir: Path,
+    output_csv: Path,
+    output_parquet: Path,
+    row_count: int,
+) -> None:
+    manifest = {
+        "artifact": "asn_registry_baseline_monthly",
+        "layer": "staging",
+        "analysis_unit": "(asn, analysis_month)",
+        "producer": "scripts/stage_registry.py",
+        "command": "python3 " + " ".join(sys.argv),
+        "generated_at": utc_now(),
+        "run_id": run_id,
+        "schema_version": schema_version(config),
+        "parser_version": parser_version(config),
+        "inputs": {
+            "asn_months": artifact_entry(input_path),
+            "raw_manifest_dir": relative_to_root(raw_dir),
+        },
+        "outputs": {
+            "csv": artifact_entry(output_csv),
+            "parquet": artifact_entry(output_parquet),
+        },
+        "row_count": row_count,
+        "validation_command": "python3 scripts/validate_outputs.py --stage registry",
+        "meaning": "ASN delegated/RDAP/registry 行政信息的月度 baseline。",
+        "caveats": [
+            "allocated_country 来自 delegated ASN 分配证据。",
+            "registered_country 只来自 RDAP/registry 注册证据，不能用 delegated 强行填充。",
+            "本表是行政注册线索，不是运营国家判断。",
+        ],
+    }
+    write_json(manifest_path, manifest)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build registry staging output.")
     add_common_args(parser)
@@ -164,10 +216,18 @@ def main(argv: list[str] | None = None) -> int:
         normalize_record(find_manifest(raw_dir, item["asn"], item["month"], run_id), run_id, config)
         for item in read_asn_months(input_path)
     ]
-    write_table(
-        rows,
-        output_dir / "asn_registry_baseline_monthly.csv",
-        output_dir / "asn_registry_baseline_monthly.parquet",
+    output_csv = output_dir / "asn_registry_baseline_monthly.csv"
+    output_parquet = output_dir / "asn_registry_baseline_monthly.parquet"
+    write_table(rows, output_csv, output_parquet)
+    write_artifact_manifest(
+        manifest_path=output_dir / "asn_registry_baseline_monthly.manifest.json",
+        run_id=run_id,
+        config=config,
+        input_path=input_path,
+        raw_dir=raw_dir,
+        output_csv=output_csv,
+        output_parquet=output_parquet,
+        row_count=len(rows),
     )
     print(f"saved {len(rows)} registry staging rows to {relative_to_root(output_dir)}")
     return 0

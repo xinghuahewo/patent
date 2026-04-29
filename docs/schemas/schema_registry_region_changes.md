@@ -135,7 +135,7 @@ python3 scripts/validate_outputs.py --stage delegated_monthly
 python3 scripts/validate_outputs.py --stage region_segments
 python3 scripts/validate_outputs.py --stage region_trajectories
 python3 scripts/validate_outputs.py --stage region_change_events
-python3 scripts/validate_outputs.py --stage all
+python3 scripts/validate_outputs.py --stage registry_history
 ```
 
 校验器会检查 schema、月份格式、允许值、区间时长、事件类型、Parquet 是否存在，以及 raw evidence SHA256 是否匹配。

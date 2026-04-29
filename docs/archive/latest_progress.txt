@@ -1,0 +1,10 @@
+状态：archived
+
+本文件已不再维护，避免状态说明分散。
+
+请改看：
+
+- `docs/status.md`：当前进度、有效产物、下一步。
+- `docs/runbook.md`：运行命令、校验命令和仓库维护规则。
+- `docs/roadmap.md`：stage1 之后的长期路线。
+- `docs/schema.md` 和 `docs/schemas/`：字段契约。

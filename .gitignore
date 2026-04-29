@@ -31,6 +31,12 @@ package-lock.json
 logs/**
 !logs/.gitkeep
 
+# Input fixtures are small and explicit. Ignore ad-hoc or large local inputs
+# unless they are deliberately promoted here.
+data/input/*
+!data/input/asn_months.csv
+!data/input/asn_months_registry_IR_2026-03.csv
+
 # Raw evidence and generated pipeline outputs can be very large.
 # Keep only the input sample and top-level directory placeholders in Git.
 data/raw/**
