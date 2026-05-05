@@ -95,6 +95,66 @@ def test_rdap_response_parser_extracts_registry_fields() -> None:
     assert fields["parent_org"] == "Example Global Group"
 
 
+def test_rdap_response_parser_extracts_country_from_address_label() -> None:
+    fields = extract_rdap_fields(
+        {
+            "handle": "AS56815",
+            "name": "Olka",
+            "entities": [
+                {
+                    "roles": ["registrant"],
+                    "vcardArray": [
+                        "vcard",
+                        [
+                            ["version", {}, "text", "4.0"],
+                            ["fn", {}, "text", "GeniusMind S.A."],
+                            [
+                                "adr",
+                                {"label": "No.83, Poseidonos Blvd, Alimos\n17455\nAthens\nGREECE"},
+                                "text",
+                                ["", "", "", "", "", "", ""],
+                            ],
+                        ],
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert fields["registered_country"] == "GR"
+    assert fields["org_name"] == "Olka"
+    assert fields["parent_org"] == "GeniusMind S.A."
+
+
+def test_rdap_response_parser_extracts_iran_country_alias_from_address_label() -> None:
+    fields = extract_rdap_fields(
+        {
+            "handle": "AS64500",
+            "name": "Example Tehran",
+            "entities": [
+                {
+                    "roles": ["administrative"],
+                    "vcardArray": [
+                        "vcard",
+                        [
+                            ["version", {}, "text", "4.0"],
+                            ["fn", {}, "text", "Example IR Org"],
+                            [
+                                "adr",
+                                {"label": "Tehran\nIRAN, ISLAMIC REPUBLIC OF"},
+                                "text",
+                                ["", "", "", "", "", "", ""],
+                            ],
+                        ],
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert fields["registered_country"] == "IR"
+
+
 def test_registry_normalization_flags_admin_conflict(tmp_path: Path) -> None:
     raw_path = tmp_path / "registry.json"
     write_json(

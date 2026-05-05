@@ -26,6 +26,75 @@
 
 ## 最近一次工作记录
 
+### 2026-05-05：对 35 条 case 候选补跑 RDAP registry 证据
+
+任务背景：
+
+- 用户确认下一步应直接补证，不继续绕报告模板。
+- 目标只针对 `reports/case_material/IR_2026-03/review_queue.csv` 中 `35` 条候选补 registry / RDAP 证据，不扩国家、不扩月份、不进入 path / infra。
+
+本次完成：
+
+- 从 `review_queue.csv` 生成临时输入 `data/input/asn_months_case_IR_2026-03.csv`。
+- 运行在线 registry 采集：`python3 scripts/collect_registry.py --online --input data/input/asn_months_case_IR_2026-03.csv`。
+- 发现 RIPE RDAP 返回的实体地址里有国家名称 label，但现有解析器只接受两位国家码，导致 `registered_country` 没有填充。
+- 修复 `scripts/collect_registry.py`，从 RDAP vCard `adr` 的 `label` 中解析常见国家名别名，例如 `GREECE -> GR`、`IRAN, ISLAMIC REPUBLIC OF -> IR`。
+- 新增对应单元测试。
+- 重新补跑 35 条 RDAP，重建 registry staging、stage1 和 case material。
+
+涉及文件：
+
+- `scripts/collect_registry.py`
+- `tests/test_staging_normalization.py`
+- `docs/status.md`
+- `docs/artifacts.md`
+- `docs/worklog.md`
+
+生成或更新产物：
+
+- `data/raw/registry/manifest/*_20260505T1437*.json`
+- `data/raw/registry/rdap/*_manual_2026_04_23_01*.json`
+- `data/raw/_logs/collect_registry_manual_2026_04_23_01_20260505T143837Z.json`
+- `data/staging/registry/asn_registry_baseline_monthly.csv`
+- `data/curated/stage1/asn_suspect_stage1.csv`
+- `reports/case_material/IR_2026-03/`
+
+结果：
+
+- 35 条候选 RDAP 请求全部成功。
+- 修复解析后，35 条 case 候选中 `registered_country` 非空 `31` 条，仍缺失 `4` 条：`212328`、`61176`、`205997`、`216125`。
+- registry 全表仍为 `827` 行，`registered_country` 非空从此前 `2` 条提升到 `33` 条。
+- case material 重建后仍为 `35` 条：`medium_review=9`、`low_review=26`、`high_review=0`。
+
+验证结果：
+
+```bash
+pytest -q tests/test_staging_normalization.py tests/test_case_material.py
+python3 -m py_compile scripts/collect_registry.py
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- 局部测试：21 passed
+- `py_compile`：passed
+- `check_repo_rules.py`：passed
+- `pytest -q`：37 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- `212328`、`61176`、`205997`、`216125` 的 RDAP 响应仍未提供可解析国家，后续若要继续补证，应考虑 whois 或 RIR 组织对象补充，不要把 delegated country 当 registered country。
+- `high_review` 仍为 `0`，说明补证后仍未出现同时满足高优先级阈值的候选；这不是正常/异常裁定。
+
+下次打开先看：
+
+1. `reports/case_material/IR_2026-03/review_queue.csv`
+2. `reports/case_material/IR_2026-03/cases/`
+3. `scripts/collect_registry.py` 的 RDAP country label 解析逻辑
+
 ### 2026-05-05：生成 IR 2026-03 case material
 
 任务背景：

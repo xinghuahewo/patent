@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -48,6 +49,30 @@ RIR_DELEGATED_URLS = {
 
 RDAP_BOOTSTRAP_URL = "https://data.iana.org/rdap/asn.json"
 USER_AGENT = "asn-mismatch-pipeline/0.1 (+registry evidence collection)"
+COUNTRY_NAME_ALIASES = {
+    "AUSTRALIA": "AU",
+    "AZERBAIJAN": "AZ",
+    "BULGARIA": "BG",
+    "CANADA": "CA",
+    "FRANCE": "FR",
+    "GERMANY": "DE",
+    "GREECE": "GR",
+    "IRAN": "IR",
+    "IRAN, ISLAMIC REPUBLIC OF": "IR",
+    "ISLAMIC REPUBLIC OF IRAN": "IR",
+    "MOLDOVA": "MD",
+    "ROMANIA": "RO",
+    "SWITZERLAND": "CH",
+    "TURKEY": "TR",
+    "UNITED ARAB EMIRATES": "AE",
+    "UAE": "AE",
+    "UNITED KINGDOM": "GB",
+    "GREAT BRITAIN": "GB",
+    "ENGLAND": "GB",
+    "UNITED STATES": "US",
+    "UNITED STATES OF AMERICA": "US",
+    "USA": "US",
+}
 
 
 @dataclass(frozen=True)
@@ -469,10 +494,30 @@ def _country_from_entity(entity: dict[str, Any]) -> str | None:
     if country:
         return country
     for item in _vcard_items(entity):
-        if len(item) >= 4 and item[0] == "adr" and isinstance(item[3], list) and item[3]:
-            country = _country_code(item[3][-1])
+        if len(item) >= 4 and item[0] == "adr":
+            if isinstance(item[3], list) and item[3]:
+                country = _country_code(item[3][-1]) or _country_from_label(" ".join(str(part) for part in item[3] if part))
+                if country:
+                    return country
+            params = item[1] if isinstance(item[1], dict) else {}
+            country = _country_from_label(params.get("label"))
             if country:
                 return country
+    return None
+
+
+def _country_from_label(value: Any) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    direct = _country_code(text)
+    if direct:
+        return direct
+    normalized = " ".join(text.upper().replace("/", " ").replace("\n", " ").split())
+    for name, code in sorted(COUNTRY_NAME_ALIASES.items(), key=lambda item: len(item[0]), reverse=True):
+        pattern = r"(?<![A-Z])" + re.escape(name) + r"(?![A-Z])"
+        if re.search(pattern, normalized):
+            return code
     return None
 
 

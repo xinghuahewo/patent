@@ -15,6 +15,7 @@
 - prefixes 已完成 `2026-03` 伊朗本机 `rrc25` bview 全量缓存。
 - prefix_geo 已完成 `2026-03` 伊朗单月试点，使用本地 NRO delegated 快照做静态 prefix-country 画像。
 - registry 已用本地 NRO delegated ASN 快照补齐伊朗 `2026-03` 试点的 `allocated_country`；`registered_country` 仍只来自 RDAP/registry，不做推断填充。
+- 已对 `35` 条 case 候选补跑在线 RDAP，并修复 RIPE RDAP 地址 label 中英文国家名解析；当前 `827` 条 registry 记录中 `registered_country` 非空 `33` 条，其中 `35` 条 case 候选里非空 `31` 条。
 - 已为 `IR / 2026-03` 的 `35` 条 `geo_conflict_flag=true` 候选生成 case material：`review_queue.csv`、`summary.md`、`manifest.json` 和 `35` 张 case card。
 - 五年 delegated 行政分配变化分析已经完成，作为独立 registry history 旁线保留。
 - 当前主线仍然不要扩到 path、infra 或平台化 case report；下一步应先人工查看本次 case material 的队列和证据弱点。
@@ -77,9 +78,9 @@ python3 scripts/validate_outputs.py --stage all --no-progress
 ## 当前缺口
 
 - prefix_geo 和 delegated registry 目前只完成 `IR / 2026-03` 试点，尚未扩展到其他国家或月份。
-- `registered_country` 覆盖仍不足；当前 `827` 条 registry 记录中只有 `2` 条来自 RDAP 的 `registered_country` 非空。
+- `registered_country` 覆盖仍不足；补跑后当前 `827` 条 registry 记录中 `33` 条来自 RDAP 的 `registered_country` 非空，`35` 条 case 候选中仍有 `4` 条缺失。
 - case material 已覆盖本次 `35` 条静态 prefix_geo 冲突线索，但还没有人工复核结果回填。
-- 当前 `high_review=0`，主要原因是 `registered_country` 覆盖不足或证据弱点触发了中低优先级；这不是正常/异常结论。
+- 当前 `high_review=0`，主要原因是进入 case 的强覆盖样本仍未同时满足高优先级阈值，或存在 prefix 数量少、unmapped 多等证据弱点；这不是正常/异常结论。
 - infra / path 证据还没有进入正式流水线。
 
 ## 下一步
@@ -97,4 +98,5 @@ python3 scripts/validate_outputs.py --stage all --no-progress
 - `geo_conflict_flag=true`：`35` 条
 - stage1 合并后输出：`827` 条候选记录
 - registry delegated 补齐后输出：`827` 条 registry baseline，其中 `allocated_country=IR` 为 `789` 条，`allocated_country=ZZ` 为 `28` 条
-- case material 输出：`35` 条队列记录、`35` 张 case card，`medium_review=10`、`low_review=25`
+- registry RDAP 补证后：全表 `registered_country` 非空 `33` 条，case 候选中非空 `31` 条
+- case material 输出：`35` 条队列记录、`35` 张 case card，`medium_review=9`、`low_review=26`

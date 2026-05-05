@@ -244,8 +244,10 @@ python3 scripts/build_case_material.py --country IR --month 2026-03
 - 队列行数：`35`
 - case card 数：`35`
 - high_review：`0`
-- medium_review：`10`
-- low_review：`25`
+- medium_review：`9`
+- low_review：`26`
+- registry RDAP 补证后，case 候选中 `registered_country` 非空：`31`
+- registry RDAP 补证后，case 候选中 `registered_country` 仍缺失：`4`
 
 ## `data/staging/registry/asn_registry_baseline_monthly.csv`
 
