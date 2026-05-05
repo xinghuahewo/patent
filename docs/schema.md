@@ -136,6 +136,31 @@ raw_evidence_path, raw_evidence_sha256
 - `geo_conflict_flag` 来自 `prefix_geo` 静态画像，只能作为候选集线索。
 - 边界型 ASN 不应自动判为异常。
 
+## case material: `reports/case_material/IR_2026-03/`
+
+输出路径：
+
+- `reports/case_material/IR_2026-03/summary.md`
+- `reports/case_material/IR_2026-03/review_queue.csv`
+- `reports/case_material/IR_2026-03/manifest.json`
+- `reports/case_material/IR_2026-03/cases/AS{asn}.md`
+
+字段：
+
+```text
+asn, month, review_priority, evidence_status, trigger_reason,
+weakness_flags, raw_evidence_path, raw_evidence_sha256
+```
+
+语义约束：
+
+- 当前只覆盖 `IR / 2026-03` 且 `geo_conflict_flag=true` 的 stage1 候选。
+- `review_priority` 只表示人工复核队列优先级。
+- `evidence_status` 只描述证据完整度，不表示真假判断。
+- `weakness_flags` 记录缺失证据、unmapped 多、prefix 数量少或解释性降权线索。
+- case material 不输出最终运营国字段。
+- case material 不输出异常裁定字段。
+
 ## registry history
 
 该部分是独立旁线，不进入日常 stage1 主流程。

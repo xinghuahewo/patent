@@ -26,6 +26,69 @@
 
 ## 最近一次工作记录
 
+### 2026-05-05：生成 IR 2026-03 case material
+
+任务背景：
+
+- 下一阶段计划要求先把现有 `IR / 2026-03` 的 `35` 条 `geo_conflict_flag=true` 候选整理成人工复核材料，不扩展 path、infra、其他国家或月份。
+
+本次完成：
+
+- 新增 `scripts/build_case_material.py`，从 stage1、prefix_geo、registry、prefix inventory 生成复核队列、summary、manifest 和逐 ASN case card。
+- 新增 `tests/test_case_material.py`，覆盖筛选范围、缺失 `registered_country` 不生成最终裁定、`ZZ` / unmapped 多时降级、case card 必须包含“不能说明什么”和 raw evidence 引用。
+- 生成 `reports/case_material/IR_2026-03/`：`review_queue.csv` `35` 行，`cases/` `35` 张卡，`medium_review=10`、`low_review=25`、`high_review=0`。
+- 新增 `docs/schemas/schema_case_material.md`，并更新 `docs/schema.md`、`docs/schemas/README.md`、`docs/artifacts.md`、`docs/runbook.md`、`docs/status.md`。
+- 修正 `docs/schemas/schema_stage1.md` 中 prefix_geo 仍是后续接入的旧表述。
+
+涉及文件：
+
+- `scripts/build_case_material.py`
+- `tests/test_case_material.py`
+- `docs/schema.md`
+- `docs/schemas/README.md`
+- `docs/schemas/schema_case_material.md`
+- `docs/schemas/schema_stage1.md`
+- `docs/artifacts.md`
+- `docs/runbook.md`
+- `docs/status.md`
+- `docs/worklog.md`
+
+生成产物：
+
+- `reports/case_material/IR_2026-03/summary.md`
+- `reports/case_material/IR_2026-03/review_queue.csv`
+- `reports/case_material/IR_2026-03/manifest.json`
+- `reports/case_material/IR_2026-03/cases/`
+
+验证结果：
+
+```bash
+python3 scripts/build_case_material.py --country IR --month 2026-03
+python3 -m py_compile scripts/build_case_material.py
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `build_case_material.py`：saved `35` case material rows
+- `py_compile`：passed
+- `check_repo_rules.py`：passed
+- `pytest -q`：35 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- 当前 `registered_country` 覆盖不足，导致本次没有 `high_review`；这只是证据状态和复核优先级，不是正常/异常结论。
+- path / infra 证据仍未进入正式流水线。
+
+下次打开先看：
+
+1. `reports/case_material/IR_2026-03/summary.md`
+2. `reports/case_material/IR_2026-03/review_queue.csv`
+3. `docs/schemas/schema_case_material.md`
+
 ### 2026-05-05：补充任务类型收口清单
 
 任务背景：

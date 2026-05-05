@@ -67,6 +67,12 @@ python3 scripts/build_stage1_suspects.py
 
 `prefix_geo` 阶段只输出静态前缀地理画像，不直接做最终运营国裁定。`collect_registry_delegated_local.py` 只从本地 NRO delegated ASN 快照补 `allocated_country`，不会伪造 `registered_country`。
 
+当前 case material 只覆盖 `IR / 2026-03` 的 `geo_conflict_flag=true` 候选，输出到 `reports/`，不进入 `data/staging` 或 `data/curated`：
+
+```bash
+python3 scripts/build_case_material.py --country IR --month 2026-03
+```
+
 ## 校验
 
 日常快速校验：
@@ -184,7 +190,7 @@ python3 scripts/build_clean_region_change_report.py
 
 当前新增源域的具体范围是 `prefix_geo`，先用已有伊朗 `2026-03` prefix inventory 跑通 raw/staging/validator/stage1 融合链路，再考虑扩充国家或月份。
 
-stage1 完成后的 case material、path、infra、final case fusion 不写进本文作为当前命令，除非对应模块已经实现并有可校验入口；设计边界先维护在 `docs/roadmap.md`。
+stage1 完成后的 path、infra、final case fusion 不写进本文作为当前命令，除非对应模块已经实现并有可校验入口；设计边界先维护在 `docs/roadmap.md`。当前已经实现的 case material 命令见“日常主线”。
 
 ## 任务类型收口清单
 

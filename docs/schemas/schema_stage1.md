@@ -37,11 +37,11 @@
 - `asn_registry_baseline_monthly`
 - `asn_link_summary_monthly`
 
-后续版本可扩展接入：
+当前 v1 已接入：
 
 - `asn_prefix_geo_monthly`
 
-但 v1 不要求必须依赖 geo 输入。
+如果缺少 prefix_geo 输入，脚本仍应显式保持默认空值或失败，不得伪造地理结论。
 
 ---
 
@@ -95,8 +95,8 @@
 表示静态地理画像与行政基线之间存在冲突。
 
 注意：
-- v1 可暂不接入完整 geo 数据
-- 若未接入，应使用稳定、显式的默认逻辑
+- v1 当前接入 `prefix_geo`
+- 若某次运行没有可用 geo 数据，应使用稳定、显式的默认逻辑或直接失败
 - 不要伪造地理结论
 
 ### 6.3 `topology_anomaly_flag`

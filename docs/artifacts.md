@@ -189,6 +189,64 @@ python3 scripts/validate_outputs.py --stage stage1
 - 行数：`827`
 - 其中来自 `prefix_geo` 的 geo conflict 线索：`35`
 
+## `reports/case_material/IR_2026-03/`
+
+层级：`reports`
+
+分析单位：`(asn, month)`
+
+生产脚本：
+
+```bash
+python3 scripts/build_case_material.py --country IR --month 2026-03
+```
+
+核心文件：
+
+- `reports/case_material/IR_2026-03/summary.md`
+- `reports/case_material/IR_2026-03/review_queue.csv`
+- `reports/case_material/IR_2026-03/manifest.json`
+- `reports/case_material/IR_2026-03/cases/AS{asn}.md`
+
+上游输入：
+
+- `data/curated/stage1/asn_suspect_stage1.csv`
+- `data/staging/prefixes/asn_prefix_geo_monthly.csv`
+- `data/staging/registry/asn_registry_baseline_monthly.csv`
+- `data/staging/prefixes/asn_prefix_inventory_monthly.csv`
+
+输出含义：
+
+- 将 `IR / 2026-03` stage1 中 `geo_conflict_flag=true` 的候选整理成人工复核队列。
+- 每个候选生成一张 Markdown case card，保留 raw evidence 路径和 hash。
+- 用 `review_priority` 和 `evidence_status` 辅助人工排序。
+
+关键字段：
+
+- `asn`
+- `month`
+- `review_priority`
+- `evidence_status`
+- `trigger_reason`
+- `weakness_flags`
+- `raw_evidence_path`
+- `raw_evidence_sha256`
+
+不能说明：
+
+- 不能说明最终运营国。
+- 不能作为异常裁定。
+- `dominant_prefix_country` 仍只是静态 prefix delegated 画像。
+- 缺失数据只进入 `evidence_status` 或 `weakness_flags`，不得补假值。
+
+当前试点结果：
+
+- 队列行数：`35`
+- case card 数：`35`
+- high_review：`0`
+- medium_review：`10`
+- low_review：`25`
+
 ## `data/staging/registry/asn_registry_baseline_monthly.csv`
 
 层级：`staging`
