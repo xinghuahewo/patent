@@ -185,3 +185,108 @@ python3 scripts/build_clean_region_change_report.py
 当前新增源域的具体范围是 `prefix_geo`，先用已有伊朗 `2026-03` prefix inventory 跑通 raw/staging/validator/stage1 融合链路，再考虑扩充国家或月份。
 
 stage1 完成后的 case material、path、infra、final case fusion 不写进本文作为当前命令，除非对应模块已经实现并有可校验入口；设计边界先维护在 `docs/roadmap.md`。
+
+## 任务类型收口清单
+
+不要靠记忆决定要改哪些文件。每次任务结束前，按任务类型检查下面清单。
+
+### 所有非纯查询任务
+
+通常需要检查：
+
+- `docs/worklog.md`：记录本次做了什么、涉及文件、验证结果、遗留问题、下次入口。
+- `docs/status.md`：如果当前状态、有效产物、验证结果、缺口或下一步发生变化，必须更新。
+- `python3 scripts/check_repo_rules.py`：确认文档和产物边界没有破坏。
+- `pytest -q`：确认规则和脚本测试通过。
+- `python3 scripts/validate_outputs.py --stage all --no-progress`：如果本机产物可用，确认日常主线仍通过。
+
+### 新增或修改源域
+
+例如新增 `path`、`infra`、新的 registry 子源或新的 prefix 处理源。
+
+必须检查：
+
+- `docs/schema.md`
+- `docs/schemas/` 中对应细分 schema
+- `scripts/collect_xxx.py`，如果该源需要 raw 采集
+- `scripts/stage_xxx.py`
+- `scripts/validate_outputs.py`
+- `tests/`
+- `docs/artifacts.md`，如果新增或更新 staging / curated 核心产物
+- `docs/status.md`
+- `docs/worklog.md`
+
+顺序仍是：schema -> collect -> stage -> validator -> build/report。
+
+### 新增或修改融合逻辑
+
+例如修改 `build_stage1_suspects.py` 或后续 final fusion。
+
+必须检查：
+
+- 对应 `scripts/build_xxx.py`
+- `docs/schema.md` 和相关 `docs/schemas/`
+- `tests/`
+- `docs/artifacts.md`，如果 curated 输出字段或语义变化
+- `docs/status.md`
+- `docs/worklog.md`
+
+不得把融合逻辑写进 staging 脚本。
+
+### 新增报告或 case material
+
+例如生成人工复核材料、案例卡或专题 summary。
+
+必须检查：
+
+- `scripts/build_xxx.py` 或 `scripts/report_xxx.py`
+- `reports/...` 输出目录
+- `reports/.../manifest.json`，如果报告会长期保留或需要复现
+- `docs/artifacts.md`，如果报告成为长期核心产物
+- `docs/status.md`
+- `docs/worklog.md`
+- `tests/`，如果报告规则或分层逻辑可单测
+
+报告输出必须放在 `reports/`，不要散落到仓库根目录或 `docs/`。
+
+### 修改执行命令或仓库规则
+
+例如改 `.gitignore`、CI、规则检查器、运行命令或文档结构。
+
+必须检查：
+
+- `docs/runbook.md`
+- `README.md`，如果入口命令或入口文档变化
+- `scripts/check_repo_rules.py`，如果规则可自动检查
+- `.github/workflows/quality.yml`，如果 CI 行为变化
+- `AGENTS.md`，如果自动代理硬规则变化
+- `docs/worklog.md`
+
+### 修改长期路线或方法边界
+
+例如改变 stage1 后续路线、path / infra / final fusion 的进入条件。
+
+必须检查：
+
+- `docs/roadmap.md`
+- `docs/status.md`，如果当前下一步变化
+- `AGENTS.md`，如果是硬性方法约束变化
+- `docs/worklog.md`
+
+不要只在聊天里更新路线。
+
+### 修改字段语义或解释口径
+
+例如改变 `dominant_prefix_country`、`geo_conflict_flag`、`suspect_level` 的含义。
+
+必须检查：
+
+- `docs/schema.md`
+- `docs/schemas/` 中对应细分 schema
+- 相关脚本
+- `tests/`
+- `docs/artifacts.md`，如果已有产物语义变化
+- `docs/status.md`
+- `docs/worklog.md`
+
+字段语义变化必须写清楚“能说明什么”和“不能说明什么”。

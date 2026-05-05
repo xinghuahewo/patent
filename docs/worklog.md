@@ -26,6 +26,47 @@
 
 ## 最近一次工作记录
 
+### 2026-05-05：补充任务类型收口清单
+
+任务背景：
+
+- 用户指出一次任务后可能需要改很多文件，担心靠记忆会漏。
+
+本次完成：
+
+- 在 `docs/runbook.md` 新增“任务类型收口清单”。
+- 按任务类型列出必须检查或更新的文件：所有非纯查询任务、新源域、融合逻辑、报告/case material、执行命令或仓库规则、长期路线、字段语义。
+- 明确以后按清单收口，不靠记忆判断要改哪些文件。
+
+涉及文件：
+
+- `docs/runbook.md`
+- `docs/worklog.md`
+
+验证结果：
+
+```bash
+python3 scripts/check_repo_rules.py
+pytest -q
+python3 scripts/validate_outputs.py --stage all --no-progress
+```
+
+结果：
+
+- `check_repo_rules.py`：passed
+- `pytest -q`：31 passed
+- `validate_outputs.py --stage all --no-progress`：registry、links、prefixes、prefix_geo、stage1 全部 ok
+
+遗留问题：
+
+- `scripts/check_repo_rules.py` 目前只能自动检查其中一部分规则；任务类型清单仍需要执行者按 runbook 人工核对。
+
+下次打开先看：
+
+1. `docs/worklog.md` 最新记录。
+2. `docs/runbook.md` 的“任务类型收口清单”。
+3. `docs/status.md` 的“当前缺口”和“下一步”。
+
 ### 2026-04-29：收尾前更新 gitignore 并准备提交
 
 任务背景：
